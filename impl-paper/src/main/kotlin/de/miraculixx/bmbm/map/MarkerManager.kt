@@ -48,12 +48,15 @@ object MarkerManager {
         playerMarkers.getOrPut(playerUUID) {
             mutableSetOf()
         }.add(marker.position)
+        writeToDisk()
     }
 
     fun removeMarker(marker: Vector3d, worldName: String, playerUUID: UUID): Boolean {
         val markerSet = markerSets["BANNER_MARKER_$worldName"] ?: return false
         playerMarkers[playerUUID]?.remove(marker)
-        return markerSet.markers.remove(marker.stringify()) != null
+        val removed = markerSet.markers.remove(marker.stringify()) != null
+        writeToDisk()
+        return removed
     }
 
     fun getMarkerOwner(vector3d: Vector3d): UUID? {
@@ -142,6 +145,12 @@ object MarkerManager {
     }
 
     fun saveAllMarker() {
+        writeToDisk()
+        markerSets.clear()
+        playerMarkers.clear()
+    }
+
+    private fun writeToDisk() {
         val gson = MarkerGson.INSTANCE
         val folder = prepareConfigFolder()
         markerSets.forEach { (id, set) ->
@@ -150,8 +159,6 @@ object MarkerManager {
         }
         val file = File("$folder/player_markers.json")
         file.writeText(json.encodeToString(playerMarkers))
-        markerSets.clear()
-        playerMarkers.clear()
     }
 
     private fun prepareConfigFolder(): File {
